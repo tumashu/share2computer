@@ -40,6 +40,7 @@
 
 ;; ** Share to Computer
 (require 'url)
+(require 'json)
 
 (defcustom share2computer-urls nil
   "The possible download urls of Android app: ShareToComputer."
