@@ -5,6 +5,7 @@
 
 ;; Author: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/share2computer
+;; Keywords: convenience
 ;; Version: 0.0.1
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -41,6 +42,10 @@
 ;; ** Share to Computer
 (require 'url)
 (require 'json)
+
+(defgroup share2computer nil
+  "Elisp helper of android ShareToComputer."
+  :group 'convenience)
 
 (defcustom share2computer-urls nil
   "The possible download urls of Android app: ShareToComputer."
