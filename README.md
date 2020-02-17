@@ -3,15 +3,14 @@ Note: this file is auto converted from share2computer.el by [el2org](https://git
 
 # &#30446;&#24405;
 
-1.  [README](#org3158f1d)
+1.  [README](#orgbca678e)
 
 
-<a id="org3158f1d"></a>
+<a id="orgbca678e"></a>
 
 # README
 
-share2computer is a elisp helper of android app: [Share to Computer](https://github.com/jimmod/ShareToComputer)
-When user have shared files with ShareToComputer in android phone,
-they can run Emacs command \`share2computer' in android to download
-shared files in computer.
+share2computer is an elisp helper of android app: [Share to Computer](https://github.com/jimmod/ShareToComputer).
+When files shared by android ShareToComputer, user can run Emacs command \`share2computer'
+in computer to download.
 
