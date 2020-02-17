@@ -42,6 +42,10 @@
 (require 'url)
 (require 'json)
 
+(defgroup share2computer nil
+  "Elisp helper of android ShareToComputer."
+  :group 'convenience)
+
 (defcustom share2computer-urls nil
   "The possible download urls of Android app: ShareToComputer."
   :group 'share2computer
