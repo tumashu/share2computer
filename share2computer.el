@@ -1,4 +1,4 @@
-;;; eh-misc.el --- Tumashu's emacs configuation
+;;; share2computer.el --- Elisp helper of android ShareToComputer
 
 ;; * Header
 ;; Copyright (c) 2020, Feng Shu
@@ -6,6 +6,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/share2computer
 ;; Version: 0.0.1
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -45,10 +46,16 @@
   :group 'share2computer
   :type '(repeat string))
 
-(defcustom share2computer-default-path "~/share2computer/"
-  "The default download path of share2computer."
-  :group 'org-brain
+(defcustom share2computer-default-directory "~/share2computer/"
+  "The default download directory of share2computer."
+  :group 'share2computer
   :type '(string))
+
+(defcustom share2computer-finish-hook nil
+  "Hook run when share2computer download finish.
+hook function's argument is download directory."
+  :group 'share2computer
+  :type 'hook)
 
 (defvar share2computer--file-number 0
   "The number of downloaded files.")
@@ -60,12 +67,18 @@
   "The timer used to show second of time when connect url.")
 
 (defun share2computer--register (url buffer)
+  "Register BUFFER to URL key of `share2computer--buffers'."
   (push buffer (alist-get url share2computer--buffers nil t 'equal)))
 
 (defun share2computer--registered-p (url buffer)
+  "Check BUFFER register status to URL key of `share2computer--buffers'."
   (member buffer (alist-get url share2computer--buffers nil t 'equal)))
 
 (defun share2computer--kill (url &optional reverse)
+  "Kill buffers and network processes related to URL.
+When url is 'all, kill all buffers and network processes of
+share2computer.  when REVERSE is non-nil, kill all except related
+to URL."
   (let ((kill-buffer-query-functions nil)
         buffers result)
     (dolist (x share2computer--buffers)
@@ -80,7 +93,12 @@
       ;; 必须先设置 share2computer--buffers 然后再删除 buffer
       (mapc #'kill-buffer buffers))))
 
-(defun share2computer--write (status url link path n &optional retry-n)
+(defun share2computer--write (status url link directory n &optional retry-n)
+  "Download file from LINK and write to DIRECTORY.
+If multi files are shared,  N is the number of downloaded files.
+If retry is need, RETRY-N is retry time..
+Argument STATUS used by `url-retrieve'.
+Argument URL is used to message."
   (let* ((err (plist-get status :error))
          (disposition
           (mail-fetch-field "Content-Disposition"))
@@ -92,7 +110,7 @@
               ".*filename=\"\\(.*\\)\"$" "\\1"
               (decode-coding-string disposition 'utf-8))))))
     (if (and filename (not err))
-        (let ((file (concat (file-name-as-directory path) filename)))
+        (let ((file (concat (file-name-as-directory directory) filename)))
           (delete-region
            (point-min)
            (progn
@@ -105,12 +123,14 @@
           (if (= share2computer--file-number n)
               (progn
                 (message "share2computer: download finished from %S" url)
-                (eh-system-open path))
+                (run-hook-with-args 'share2computer-finish-hook directory))
             (message "share2computer: download %s/%s files to %S ..."
-                     share2computer--file-number n path)))
-      (share2computer--download-1 (current-buffer) url link path n 1))))
+                     share2computer--file-number n directory)))
+      (share2computer--download-1 (current-buffer) url link directory n 1))))
 
-(defun share2computer--download (status url path)
+(defun share2computer--download (status url directory)
+  "Download all files from ShareToComputer URL to DIRECTORY.
+STATUS is use by `url-retrieve'."
   (let ((n (save-excursion
              (goto-char (point-min))
              (re-search-forward "\n\n" nil 'move)
@@ -124,9 +144,12 @@
       (message "share2computer: start download ...")
       (dotimes (i n)
         (share2computer--download-1
-         (current-buffer) url (format "%s%S" url i) path n)))))
+         (current-buffer) url (format "%s%S" url i) directory n)))))
 
-(defun share2computer--download-1 (buffer url link path n &optional retry-n)
+(defun share2computer--download-1 (buffer url link directory n &optional retry-n)
+  "The internal function of `share2computer--download'.
+Arguments BUFFER, URL, LINK, DIRECTORY, N and RETRY-N are
+similar with `share2computer--write'."
   (if (and (numberp retry-n)
            (> retry-n 4))
       (message "share2computer: fail after retry download 3 times !!!")
@@ -134,10 +157,10 @@
      url
      (url-retrieve
       link
-      (lambda (status buffer url link path n)
+      (lambda (status buffer url link directory n)
         (when (share2computer--registered-p url buffer)
-          (share2computer--write status url link path n)))
-      (list buffer url link path n)
+          (share2computer--write status url link directory n)))
+      (list buffer url link directory n)
       t t))
     (when (numberp retry-n)
       (message "share2computer: retry(%s) download file from %S ..." retry-n link)
@@ -168,11 +191,12 @@
   (when share2computer--timer2
     (cancel-timer share2computer--timer2)))
 
-(defun share2computer--internal (path)
-  "Internal function of share2computer. "
-  (setq path (expand-file-name (file-name-as-directory path)))
+(defun share2computer--internal (directory)
+  "Internal function of share2computer.
+Argument DIRECTORY ."
+  (setq directory (expand-file-name (file-name-as-directory directory)))
   (setq share2computer--file-number 0)
-  (make-directory path t)
+  (make-directory directory t)
   (while (not (cl-some (lambda (x)
                          (> (length x) 0))
                        share2computer-urls))
@@ -184,12 +208,13 @@
       (share2computer--register
        url (url-retrieve (concat url "info")
                          'share2computer--download
-                         (list url path)
+                         (list url directory)
                          t t)))))
 
 
 ;;;###autoload
 (defun share2computer-kill ()
+  "Kill all share2computer downloads."
   (interactive)
   (share2computer--kill 'all))
 
@@ -197,7 +222,7 @@
 (defun share2computer ()
   "Download files shared by Android ShareToComputer."
   (interactive)
-  (share2computer--internal share2computer-default-path))
+  (share2computer--internal share2computer-default-directory))
 
 (declare-function org-back-to-heading "org" (&optional invisible-ok))
 (declare-function org-attach-dir "org" (&optional create-if-not-exists-p no-fs-check))
@@ -226,7 +251,7 @@
     (while status
       (push (read-from-minibuffer "share2computer url: " "http://192.168.0.X:8080")
             share2computer-urls)
-      (unless (y-or-n-p "share2computer: adding another url? ")
+      (unless (y-or-n-p "Share2computer: adding another url? ")
         (setq status nil))))
   (setq share2computer-urls
         (delete-dups share2computer-urls))
