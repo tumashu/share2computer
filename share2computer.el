@@ -230,13 +230,11 @@ Argument DIRECTORY ."
   (interactive)
   (share2computer--internal share2computer-default-directory))
 
-(declare-function org-back-to-heading "org" (&optional invisible-ok))
-(declare-function org-attach-dir "org" (&optional create-if-not-exists-p no-fs-check))
-
 ;;;###autoload
 (defun share2computer-org ()
   "Download files shared by Android ShareToComputer to org attach dir."
   (interactive)
+  (require 'org)
   (let (marker)
     (when (eq major-mode 'org-agenda-mode)
       (setq marker (or (get-text-property (point) 'org-hd-marker)
