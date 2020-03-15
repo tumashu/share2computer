@@ -1,4 +1,4 @@
-;;; share2computer.el --- Elisp helper of android ShareToComputer
+;;; share2computer.el --- Elisp helper of android ShareToComputer -*- lexical-binding: t -*-
 
 ;; * Header
 ;; Copyright (c) 2020, Feng Shu
@@ -99,7 +99,7 @@ to URL."
       ;; 必须先设置 share2computer--buffers 然后再删除 buffer
       (mapc #'kill-buffer buffers))))
 
-(defun share2computer--write (status url link directory n &optional retry-n)
+(defun share2computer--write (status url link directory n &optional _retry-n)
   "Download file from LINK and write to DIRECTORY.
 If multi files are shared,  N is the number of downloaded files.
 If retry is need, RETRY-N is retry time..
@@ -134,7 +134,7 @@ Argument URL is used to message."
                      share2computer--file-number n directory)))
       (share2computer--download-1 (current-buffer) url link directory n 1))))
 
-(defun share2computer--download (status url directory)
+(defun share2computer--download (_status url directory)
   "Download all files from ShareToComputer URL to DIRECTORY.
 STATUS is use by `url-retrieve'."
   (let ((n (save-excursion
@@ -237,7 +237,7 @@ Argument DIRECTORY ."
 (defun share2computer-org ()
   "Download files shared by Android ShareToComputer to org attach dir."
   (interactive)
-  (let (c marker)
+  (let (marker)
     (when (eq major-mode 'org-agenda-mode)
       (setq marker (or (get-text-property (point) 'org-hd-marker)
 		       (get-text-property (point) 'org-marker)))
